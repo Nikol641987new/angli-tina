@@ -327,9 +327,17 @@
 
   function startEx(mode) {
     ex = { mode, n: 0, score: 0, total: 10 };
+    $('#exMenu').classList.add('hidden');
     $('#exArea').classList.add('on');
     nextQ();
-    $('#exArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.scrollTo(0, 0);
+  }
+
+  function closeEx() {
+    $('#exArea').classList.remove('on');
+    $('#exArea').innerHTML = '';
+    $('#exMenu').classList.remove('hidden');
+    window.scrollTo(0, 0);
   }
 
   function nextQ() {
@@ -349,13 +357,14 @@
     a.append(el('p', { class: 'hint' }, pct >= 80 ? 'Výborne!' : pct >= 50 ? 'Dobrá práca, skús to ešte raz.' : 'Nevadí, opakovanie je základ. Skús znova.'));
     a.append(el('div', { class: 'exrow' },
       el('button', { class: 'primary', onclick: () => startEx(ex.mode) }, 'Znova'),
-      el('button', { class: 'sec', onclick: () => { a.classList.remove('on'); } }, 'Zavrieť')));
+      el('button', { class: 'sec', onclick: closeEx }, 'Späť na cvičenia')));
   }
 
   function renderQ() {
     const a = $('#exArea');
     const q = ex.q;
     a.innerHTML = '';
+    a.append(el('button', { class: 'link', onclick: closeEx }, '← Späť na cvičenia'));
     const scoreSpan = el('span', {}, `Skóre: ${ex.score}`);
     a.append(el('div', { class: 'exhead' }, `Otázka ${ex.n} / ${ex.total}`, scoreSpan));
     a.append(el('h3', { class: 'prompt' }, q.prompt));
