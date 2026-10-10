@@ -112,6 +112,7 @@ dialog button:not(.primary) { background: #fff; border: 1px solid var(--line); p
 
 @media (max-width: 560px) {
   .vhead, .vrow { grid-template-columns: 1fr 1fr 1fr 34px; }
-  .vhead span:nth-child(4), .vrow .sk { display: none; }
+  .vhead span:nth-child(4) { display: none; }
+  .vrow .sk { grid-column: 1 / -1; grid-row: 2; font-size: .92rem; margin-top: -4px; }
   .para { font-size: 1.1rem; }
 }
