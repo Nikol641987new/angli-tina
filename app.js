@@ -24,10 +24,34 @@
   };
 
   /* ---------- Reč: výslovnosť a rozpoznávanie ---------- */
-  function speak(text) {
+  let voicesCache = [];
+  function loadVoices() {
+    voicesCache = ('speechSynthesis' in window) ? speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang)) : [];
+  }
+  if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+
+  const FEMALE = /(samantha|serena|karen|moira|tessa|fiona|victoria|allison|ava\b|susan|zira|hazel|jenny|aria|sonia|libby|emma|kate|joanna|\bfemale\b|google us english)/i;
+  const MALE = /(daniel|alex\b|fred|oliver|arthur|george|guy\b|ryan|david|mark\b|rishi|\bmale\b)/i;
+  function voiceScore(v) {
+    let sc = 0;
+    if (/premium|enhanced|natural|neural|online/i.test(v.name + ' ' + (v.voiceURI || ''))) sc += 30;
+    if (MALE.test(v.name)) sc -= 40;
+    else if (FEMALE.test(v.name)) sc += 20;
+    if (/en[-_]GB/i.test(v.lang)) sc += 3;
+    if (/en[-_]US/i.test(v.lang)) sc += 2;
+    return sc;
+  }
+  function pickVoice(forceURI) {
+    const wanted = forceURI !== undefined ? forceURI : store.get('voice', '');
+    if (wanted) { const v = voicesCache.find(x => x.voiceURI === wanted); if (v) return v; }
+    return [...voicesCache].sort((a, b) => voiceScore(b) - voiceScore(a))[0] || null;
+  }
+  function speak(text, forceURI) {
     if (!('speechSynthesis' in window)) return;
     const u = new SpeechSynthesisUtterance(String(text).replace(/\//g, ', '));
-    u.lang = 'en-GB'; u.rate = 0.85;
+    const v = pickVoice(forceURI);
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-GB';
+    u.rate = 0.85;
     speechSynthesis.cancel(); speechSynthesis.speak(u);
   }
   function listen(onText, onFail) {
@@ -553,15 +577,26 @@
   /* ================= NASTAVENIA ================= */
   function initSettings() {
     const dlg = $('#dlg');
+    const fillVoices = () => {
+      loadVoices();
+      const sel = $('#voice');
+      sel.innerHTML = '';
+      sel.append(el('option', { value: '' }, 'Automaticky (ženský hlas)'));
+      voicesCache.forEach(v => sel.append(el('option', { value: v.voiceURI }, `${v.name} (${v.lang})`)));
+      sel.value = store.get('voice', '');
+    };
+    $('#testVoice').addEventListener('click', () => speak('Hello! Yesterday I went to the park and I saw my friend.', $('#voice').value));
     $('#btnSettings').addEventListener('click', () => {
       $('#apiKey').value = store.get('apiKey', '');
       $('#model').value = store.get('model', 'claude-haiku-5-5');
+      fillVoices();
       dlg.showModal();
     });
     $('#dlgForm').addEventListener('submit', e => {
       if (e.submitter && e.submitter.value === 'save') {
         store.set('apiKey', $('#apiKey').value.trim());
         store.set('model', $('#model').value);
+        store.set('voice', $('#voice').value);
       }
     });
   }
